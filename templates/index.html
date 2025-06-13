@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -26,6 +25,9 @@
       <label for="machine">Machine / Engin</label>
       <input type="text" name="machine" id="machine" value="{{ machine }}">
 
+      <label for="date_archivage">Date d'archivage</label>
+      <input type="date" name="date_archivage" id="date_archivage" required>
+
       <label for="fichier">Choisir le fichier PDF du BL</label>
       <input type="file" name="fichier" id="fichier" accept="application/pdf">
       {% if last_file %}
@@ -35,7 +37,6 @@
       <button type="submit">📥 Archiver le BL</button>
     </form>
 
-    
     <h2>📅 Trier les BL archivés</h2>
     <form method="POST" action="/tri_bons">
       <label for="date_selection">Sélectionnez une date</label>
