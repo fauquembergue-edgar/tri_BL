@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Bons de Livraison – {{ date_code }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>📅 Bons de Livraison – {{ date_code }}</h1>
+    {% for client, chantiers in groupes.items() %}
+      <section>
+        <h2>👤 {{ client }}</h2>
+        {% for chantier, engins in chantiers.items() %}
+          <div class="sub-section">
+            <h3>🏗️ {{ chantier }}</h3>
+            {% for engin, fichiers in engins.items() %}
+              <div class="sub-sub-section">
+                <h4>🚜 {{ engin }}</h4>
+                <ul>
+                  {% for chemin, nom_fichier in fichiers %}
+                    <li>{{ nom_fichier }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </section>
+    {% else %}
+      <p>Aucun bon trouvé pour {{ date_code }}.</p>
+    {% endfor %}
+    <p><a href="/">← Retour</a></p>
+  </div>
+</body>
+</html>

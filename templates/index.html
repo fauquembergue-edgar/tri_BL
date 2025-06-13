@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Archivage de Bons de Livraison</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="container">
+    <h1>📁 Archivage de Bons de Livraison</h1>
+
+    <form method="POST" action="/analyser_pdf" enctype="multipart/form-data">
+      <label for="pdf_file">Analyser un BL (PDF)</label>
+      <input type="file" name="pdf_file" id="pdf_file" accept="application/pdf" required>
+      <button type="submit">🔍 Lire les infos PDF</button>
+    </form>
+
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+      <label for="client">Entreprise / Client</label>
+      <input type="text" name="client" id="client" value="{{ client }}">
+
+      <label for="chantier">Chantier</label>
+      <input type="text" name="chantier" id="chantier" value="{{ chantier }}">
+
+      <label for="machine">Machine / Engin</label>
+      <input type="text" name="machine" id="machine" value="{{ machine }}">
+
+      <label for="fichier">Choisir le fichier PDF du BL</label>
+      <input type="file" name="fichier" id="fichier" accept="application/pdf">
+      {% if last_file %}
+        <p style="font-size: 0.9em;">Dernier fichier analysé : {{ last_file }}</p>
+      {% endif %}
+
+      <button type="submit">📥 Archiver le BL</button>
+    </form>
+
+    
+    <h2>📅 Trier les BL archivés</h2>
+    <form method="POST" action="/tri_bons">
+      <label for="date_selection">Sélectionnez une date</label>
+      <input type="date" id="date_selection" name="date_selection" required>
+      <button type="submit">📅 Trier par date</button>
+    </form>
+
+    <a href="/facture" class="lien-facture">🔗 Aller à l'association de factures</a>
+  </main>
+</body>
+</html>
