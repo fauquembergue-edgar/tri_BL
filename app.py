@@ -18,7 +18,7 @@ MOIS_FR = {
 app = Flask(__name__)
 app.secret_key = 'archivagebl'
 
-BASE_DIR = r"T:\SECRETARIAT\SECRETARIAT\PERMANENT\JUSTIFICATIFS FACTURES\LOUVET\Archivage_Bons"
+BASE_DIR = r"H:\Desktop\cours\stage\000 STAGE EDGAR\Archivage_Bons"
 FACTURE_DIR = os.path.join(BASE_DIR, "Factures")
 UPLOAD_TEMP = "uploads_temp"
 HISTO_FILE = os.path.join(BASE_DIR, "historique.csv")
