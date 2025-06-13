@@ -13,18 +13,24 @@
       <input type="text" name="nom_facture" id="nom_facture" required>
 
       <label for="fichiers">Sélectionner les BL à associer :</label>
-      {% for entreprise, chantiers in fichiers_groupes.items() %}
-        <h3>{{ entreprise }}</h3>
-        {% for chantier, fichiers in chantiers.items() %}
-          <h4 style="margin-left: 20px;">{{ chantier }}</h4>
-          <ul style="margin-left: 40px;">
-          {% for chemin, nom in fichiers %}
-            <li>
-              <input type="checkbox" name="fichiers" value="{{ chemin }}" id="{{ chemin }}">
-              <label for="{{ chemin }}">{{ nom }}</label>
-            </li>
+      {% for date_code, entreprises in fichiers_groupes.items() %}
+        <h2>{{ date_code }}</h2>
+        {% for entreprise, chantiers in entreprises.items() %}
+          <h3 style="margin-left: 10px;">{{ entreprise }}</h3>
+          {% for chantier, machines in chantiers.items() %}
+            <h4 style="margin-left: 30px;">{{ chantier }}</h4>
+            {% for machine, fichiers in machines.items() %}
+              <h5 style="margin-left: 50px;">{{ machine }}</h5>
+              <ul style="margin-left: 70px;">
+              {% for chemin, nom in fichiers %}
+                <li>
+                  <input type="checkbox" name="fichiers" value="{{ chemin }}" id="{{ chemin }}">
+                  <label for="{{ chemin }}">{{ nom }}</label>
+                </li>
+              {% endfor %}
+              </ul>
+            {% endfor %}
           {% endfor %}
-          </ul>
         {% endfor %}
       {% endfor %}
 
