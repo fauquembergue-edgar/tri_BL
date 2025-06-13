@@ -96,16 +96,29 @@ def upload():
     client = sanitize_filename(request.form.get("client", "").strip())
     chantier = sanitize_filename(request.form.get("chantier", "").strip())
     machine = sanitize_filename(request.form.get("machine", "").strip())
+    date_archivage_str = request.form.get("date_archivage", "").strip()
     fichier = request.files.get("fichier")
 
     if not fichier and "last_file_path" in session:
         fichier = open(session["last_file_path"], "rb")
         fichier.filename = session.get("last_file_name")
 
-    if fichier and client and chantier and machine:
+    dossier_date = ""
+    if date_archivage_str:
+        try:
+            date_archivage = datetime.datetime.strptime(date_archivage_str, "%Y-%m-%d")
+            mois = date_archivage.month
+            annee = date_archivage.year % 100
+            dossier_date = f"{MOIS_FR[mois].upper()}{annee:02d}"
+        except Exception as e:
+            print(f"[ERREUR PARSING DATE] {e}")
+            dossier_date = ""
+
+    if fichier and client and chantier and machine and dossier_date:
         nom_original = os.path.splitext(fichier.filename)[0]
         extension = os.path.splitext(fichier.filename)[1]
-        dossier_cible = os.path.join(BASE_DIR, client, chantier, machine)
+        # Archivage : date_code/client/chantier/engin
+        dossier_cible = os.path.join(BASE_DIR, dossier_date, client, chantier, machine)
         os.makedirs(dossier_cible, exist_ok=True)
         nom_fichier = f"{client}_{chantier}_{machine}_{nom_original}{extension}"
         chemin_fichier = os.path.join(dossier_cible, nom_fichier)
@@ -120,8 +133,8 @@ def upload():
         with open(HISTO_FILE, mode="a", newline="", encoding="utf-8-sig") as csvfile:
             writer = csv.writer(csvfile, delimiter=';')
             if write_header:
-                writer.writerow(["Date", "Heure", "Client", "Chantier", "Machine", "Fichier"])
-            writer.writerow([date, heure, client, chantier, machine, nom_fichier])
+                writer.writerow(["Date", "Heure", "Dossier date", "Client", "Chantier", "Machine", "Fichier"])
+            writer.writerow([date, heure, dossier_date, client, chantier, machine, nom_fichier])
 
     return redirect(url_for("index"))
 
@@ -137,7 +150,7 @@ def facture():
                 shutil.move(chemin_absolu, os.path.join(dossier_facture, os.path.basename(chemin_absolu)))
         return redirect(url_for("facture"))
 
-    fichiers_groupes = defaultdict(lambda: defaultdict(list))
+    fichiers_groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
     for root, _, files in os.walk(BASE_DIR):
         if FACTURE_DIR in root or UPLOAD_TEMP in root:
             continue
@@ -146,14 +159,13 @@ def facture():
                 chemin = os.path.join(root, file)
                 relative_path = os.path.relpath(chemin, BASE_DIR)
                 parts = relative_path.split(os.sep)
-                if len(parts) >= 3:
-                    entreprise, chantier = parts[0], parts[1]
-                    fichiers_groupes[entreprise][chantier].append((chemin, file))
+                if len(parts) >= 4:
+                    dossier_date, entreprise, chantier, machine = parts[0], parts[1], parts[2], parts[3]
+                    fichiers_groupes[dossier_date][entreprise][chantier][machine].append((chemin, file))
             except Exception as e:
                 print(f"[ERREUR FACTURE] {file} → {e}")
 
     return render_template("facture.html", fichiers_groupes=fichiers_groupes)
-
 
 @app.route('/tri_bons', methods=['GET', 'POST'])
 def tri_bons():
@@ -162,22 +174,21 @@ def tri_bons():
         if not date_sel:
             return render_template('index.html', error="Veuillez sélectionner une date.")
         year, month, _ = map(int, date_sel.split('-'))
-        date_code = f"{MOIS_FR[month]}{str(year)[2:]}"
-        # Collect PDF BL files by modification date
+        date_code = f"{MOIS_FR[month].upper()}{str(year)[2:]}"
+        # Collect PDF BL files by date_code
         bons_filtres = []
-        for root, _, files in os.walk(BASE_DIR):
+        dossier_date = date_code
+        for root, _, files in os.walk(os.path.join(BASE_DIR, dossier_date)):
             if FACTURE_DIR in root or UPLOAD_TEMP in root:
                 continue
             for file in files:
                 if file.lower().endswith('.pdf'):
                     chemin = os.path.join(root, file)
-                    dt = datetime.datetime.fromtimestamp(os.path.getmtime(chemin))
-                    if dt.year == year and dt.month == month:
-                        rel = os.path.relpath(chemin, BASE_DIR)
-                        parts = rel.split(os.sep)
-                        if len(parts) >= 3:
-                            client, chantier, engin = parts[0], parts[1], parts[2]
-                            bons_filtres.append((client, chantier, engin, chemin, file))
+                    rel = os.path.relpath(chemin, os.path.join(BASE_DIR, dossier_date))
+                    parts = rel.split(os.sep)
+                    if len(parts) >= 3:
+                        client, chantier, engin = parts[0], parts[1], parts[2]
+                        bons_filtres.append((client, chantier, engin, chemin, file))
         # Grouping
         groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         for client, chantier, engin, chemin, filename in bons_filtres:
