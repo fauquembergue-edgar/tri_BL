@@ -5,45 +5,76 @@
   <title>Créer une facture</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    .facture-flex-container {
+    body, html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .facture-main-wrapper {
       display: flex;
-      align-items: flex-start;
-      gap: 30px;
+      justify-content: flex-start;
+      align-items: stretch;
+      height: 100vh;
+      min-height: 100vh;
+      margin: 0;
     }
-    .facture-main-left {
+    .facture-ilot-central {
+      width: 900px;
+      min-width: 400px;
+      max-width: 100vw;
+      padding: 30px 32px 30px 40px;
+      background: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+      border-right: 1.5px solid #eee;
+      position: relative;
+      z-index: 3;
+      overflow-y: auto;
+    }
+    .facture-ilot-bl {
       flex: 1 1 0;
-      min-width: 350px;
-    }
-    .facture-main-right {
-      width: 550px;
-      position: sticky;
-      top: 25px;
-      align-self: flex-start;
+      min-width: 700px;
+      max-width: 1200px;
       background: #f8f8f8;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      min-height: 400px;
-      max-height: 90vh;
-      overflow: auto;
+      padding: 24px 24px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
     }
     .apercu-bl-title {
       font-weight: bold;
-      margin-bottom: 6px;
-      font-size: 1.05em;
+      font-size: 1.06em;
+      margin-bottom: 10px;
+      margin-top: 0;
+      text-align: left;
     }
     .apercu-bl-empty {
       color: #888;
       font-style: italic;
-      margin-top: 24px;
+      margin-top: 80px;
       text-align: center;
+      font-size: 1.15em;
     }
     .apercu-pdf-viewer {
       width: 100%;
-      min-height: 350px;
-      height: 60vh;
-      border: none;
+      min-height: 600px;
+      height: 82vh;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      background: white;
+      box-shadow: 0 2px 18px rgba(0,0,0,0.08);
+      margin: 0 auto;
+      display: block;
+    }
+    .container {
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    /* Optionnel: scroll indépendant pour chaque ilot si besoin */
+    .facture-ilot-central, .facture-ilot-bl {
+      overflow-y: auto;
+      height: 100vh;
     }
   </style>
   <script>
@@ -62,73 +93,71 @@
   </script>
 </head>
 <body>
-  <div class="container">
-    <h1>🧾 Associer des BL à une facture</h1>
-    <div class="facture-flex-container">
-      <!-- Partie gauche -->
-      <div class="facture-main-left">
-        <form method="GET" action="/facture">
-          <label for="mois_filtre">Filtrer par mois</label>
-          <select name="mois_filtre" id="mois_filtre">
-            <option value="">-- Tous les mois --</option>
-            {% for mois in mois_disponibles %}
-              <option value="{{ mois }}" {% if mois == mois_selectionne %}selected{% endif %}>{{ mois }}</option>
-            {% endfor %}
-          </select>
-          <label for="client_filtre">Filtrer par client</label>
-          <select name="client_filtre" id="client_filtre">
-            <option value="">-- Tous les clients --</option>
-            {% for client in clients_disponibles %}
-              <option value="{{ client }}" {% if client == client_selectionne %}selected{% endif %}>{{ client }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" style="margin-top:10px;">🔎 Filtrer</button>
-        </form>
-        <form method="POST" enctype="multipart/form-data">
-          <label for="nom_facture">Nom de la facture</label>
-          <input type="text" name="nom_facture" id="nom_facture" required>
-          <label for="bc_file">Ajouter un Bon de Commande (optionnel) :</label>
-          <input type="file" name="bc_file" id="bc_file" accept="application/pdf">
-          <label for="fichiers">Sélectionner les BL à associer :</label>
-          {% if fichiers_groupes %}
-            {% for date_code, entreprises in fichiers_groupes.items() %}
-              <h2>{{ date_code }}</h2>
-              {% for entreprise, chantiers in entreprises.items() %}
-                <h3 style="margin-left: 10px;">{{ entreprise }}</h3>
-                {% for chantier, machines in chantiers.items() %}
-                  <h4 style="margin-left: 30px;">{{ chantier }}</h4>
-                  {% for machine, fichiers in machines.items() %}
-                    <h5 style="margin-left: 50px;">{{ machine }}</h5>
-                    <ul style="margin-left: 70px;">
-                    {% for chemin, nom in fichiers %}
-                      <li>
-                        <input type="checkbox" name="fichiers" value="{{ chemin }}" id="{{ chemin }}"
-                          onclick="updatePreview(this)">
-                        <label for="{{ chemin }}">{{ nom }}</label>
-                      </li>
-                    {% endfor %}
-                    </ul>
+  <div class="facture-main-wrapper">
+    <!-- Ilot central (formulaires, filtres...) -->
+    <div class="facture-ilot-central">
+      <h1 style="margin-top: 0;">🧾 Associer des BL à une facture</h1>
+      <form method="GET" action="/facture">
+        <label for="mois_filtre">Filtrer par mois</label>
+        <select name="mois_filtre" id="mois_filtre">
+          <option value="">-- Tous les mois --</option>
+          {% for mois in mois_disponibles %}
+            <option value="{{ mois }}" {% if mois == mois_selectionne %}selected{% endif %}>{{ mois }}</option>
+          {% endfor %}
+        </select>
+        <label for="client_filtre">Filtrer par client</label>
+        <select name="client_filtre" id="client_filtre">
+          <option value="">-- Tous les clients --</option>
+          {% for client in clients_disponibles %}
+            <option value="{{ client }}" {% if client == client_selectionne %}selected{% endif %}>{{ client }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" style="margin-top:10px;">🔎 Filtrer</button>
+      </form>
+      <form method="POST" enctype="multipart/form-data">
+        <label for="nom_facture">Nom de la facture</label>
+        <input type="text" name="nom_facture" id="nom_facture" required>
+        <label for="bc_file">Ajouter un Bon de Commande (optionnel) :</label>
+        <input type="file" name="bc_file" id="bc_file" accept="application/pdf">
+        <label for="fichiers">Sélectionner les BL à associer :</label>
+        {% if fichiers_groupes %}
+          {% for date_code, entreprises in fichiers_groupes.items() %}
+            <h2>{{ date_code }}</h2>
+            {% for entreprise, chantiers in entreprises.items() %}
+              <h3 style="margin-left: 10px;">{{ entreprise }}</h3>
+              {% for chantier, machines in chantiers.items() %}
+                <h4 style="margin-left: 30px;">{{ chantier }}</h4>
+                {% for machine, fichiers in machines.items() %}
+                  <h5 style="margin-left: 50px;">{{ machine }}</h5>
+                  <ul style="margin-left: 70px;">
+                  {% for chemin, nom in fichiers %}
+                    <li>
+                      <input type="checkbox" name="fichiers" value="{{ chemin }}" id="{{ chemin }}"
+                        onclick="updatePreview(this)">
+                      <label for="{{ chemin }}">{{ nom }}</label>
+                    </li>
                   {% endfor %}
+                  </ul>
                 {% endfor %}
               {% endfor %}
             {% endfor %}
-          {% else %}
-            <p>Aucun BL archivé trouvé pour ces critères.</p>
-          {% endif %}
-          <button type="submit" style="margin-top:20px;">📦 Générer la facture</button>
-        </form>
-        <p style="margin-top:20px;"><a href="/">← Retour</a></p>
+          {% endfor %}
+        {% else %}
+          <p>Aucun BL archivé trouvé pour ces critères.</p>
+        {% endif %}
+        <button type="submit" style="margin-top:20px;">📦 Générer la facture</button>
+      </form>
+      <p style="margin-top:20px;"><a href="/">← Retour</a></p>
+    </div>
+    <!-- Ilot BL (aperçu PDF) -->
+    <div class="facture-ilot-bl">
+      <div id="apercu-bl-empty" class="apercu-bl-empty">
+        Aucun BL sélectionné.<br>
+        <span style="font-size:.92em;">Cliquez sur un BL pour l’afficher ici.</span>
       </div>
-      <!-- Partie droite : Aperçu du BL sélectionné -->
-      <div class="facture-main-right">
-        <div id="apercu-bl-empty" class="apercu-bl-empty">
-          Aucun BL sélectionné.<br>
-          <span style="font-size:.92em;">Cliquez sur un BL pour l’afficher ici.</span>
-        </div>
-        <div id="apercu-bl-body" style="display:none;">
-          <div class="apercu-bl-title" id="apercu-bl-nom"></div>
-          <iframe id="apercu-bl-frame" class="apercu-pdf-viewer"></iframe>
-        </div>
+      <div id="apercu-bl-body" style="display:none;">
+        <div class="apercu-bl-title" id="apercu-bl-nom"></div>
+        <iframe id="apercu-bl-frame" class="apercu-pdf-viewer"></iframe>
       </div>
     </div>
   </div>
