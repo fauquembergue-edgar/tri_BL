@@ -11,8 +11,8 @@ from collections import defaultdict
 # Abréviations FR 4 lettres pour les mois
 MOIS_FR = {
     1: 'janv', 2: 'févr', 3: 'mars', 4: 'avr',
-    5: 'mai', 6: 'juin', 7: 'juil', 8: 'août',
-    9: 'sept', 10: 'oct', 11: 'nov', 12: 'déc'
+    5: 'mai', 6: 'juin', 7: 'juil', 8: 'aout',
+    9: 'sept', 10: 'oct', 11: 'nov', 12: 'dec'
 }
 
 app = Flask(__name__)
@@ -140,7 +140,7 @@ def upload():
 
 @app.route("/facture", methods=["GET", "POST"])
 def facture():
-    # POST: Générer facture (inchangé)
+    # POST : Générer facture (inchangé)
     if request.method == "POST":
         nom_facture = sanitize_filename(request.form["nom_facture"].strip())
         fichiers = request.form.getlist("fichiers")
@@ -151,18 +151,18 @@ def facture():
                 shutil.move(chemin_absolu, os.path.join(dossier_facture, os.path.basename(chemin_absolu)))
         return redirect(url_for("facture"))
 
-    # Filtres GET
+    # Filtres GET (mois/client)
     mois_selectionne = request.args.get("mois_filtre", "")
     client_selectionne = request.args.get("client_filtre", "")
 
-    # Liste des mois disponibles
+    # Liste des mois disponibles (regex adaptée pour sans accent)
     mois_disponibles = [nom for nom in os.listdir(BASE_DIR)
-                        if os.path.isdir(os.path.join(BASE_DIR, nom))
-                        and re.match(r"^[A-ZÉ]{4,5}\d{2}$", nom)
-                        and nom != "Factures"]
+        if os.path.isdir(os.path.join(BASE_DIR, nom))
+        and re.match(r"^[A-Z]{4,5}\d{2}$", nom)
+        and nom != "Factures"]
     mois_disponibles.sort()
 
-    # Liste des clients disponibles
+    # Liste des clients disponibles dynamiquement
     clients_set = set()
     if mois_selectionne:
         mois_dir = os.path.join(BASE_DIR, mois_selectionne)
@@ -181,6 +181,7 @@ def facture():
     # Construction de fichiers_groupes filtré
     fichiers_groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
     for mois in mois_disponibles:
+        # N'applique le filtre que si une valeur est explicitement sélectionnée
         if mois_selectionne and mois != mois_selectionne:
             continue
         mois_dir = os.path.join(BASE_DIR, mois)
@@ -211,9 +212,6 @@ def facture():
         mois_selectionne=mois_selectionne,
         client_selectionne=client_selectionne
     )
-
-# La route /tri_bons ne sert plus, elle peut être supprimée du code.
-# (Si tu veux la conserver pour test ou autre, laisse-la, sinon tu peux la commenter/supprimer.)
 
 if __name__ == "__main__":
     ui = FlaskUI(app=app, server="flask", width=900, height=700)
