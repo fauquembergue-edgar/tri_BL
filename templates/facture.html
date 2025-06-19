@@ -8,6 +8,27 @@
 <body>
   <div class="container">
     <h1>🧾 Associer des BL à une facture</h1>
+
+    <form method="GET" action="/facture">
+      <label for="mois_filtre">Filtrer par mois</label>
+      <select name="mois_filtre" id="mois_filtre">
+        <option value="">-- Tous les mois --</option>
+        {% for mois in mois_disponibles %}
+          <option value="{{ mois }}" {% if mois == mois_selectionne %}selected{% endif %}>{{ mois }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="client_filtre">Filtrer par client</label>
+      <select name="client_filtre" id="client_filtre">
+        <option value="">-- Tous les clients --</option>
+        {% for client in clients_disponibles %}
+          <option value="{{ client }}" {% if client == client_selectionne %}selected{% endif %}>{{ client }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" style="margin-top:10px;">🔎 Filtrer</button>
+    </form>
+
     <form method="POST">
       <label for="nom_facture">Nom de la facture</label>
       <input type="text" name="nom_facture" id="nom_facture" required>
