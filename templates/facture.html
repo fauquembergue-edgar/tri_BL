@@ -9,6 +9,7 @@
   <div class="container">
     <h1>🧾 Associer des BL à une facture</h1>
 
+    <!-- Filtres de tri -->
     <form method="GET" action="/facture">
       <label for="mois_filtre">Filtrer par mois</label>
       <select name="mois_filtre" id="mois_filtre">
@@ -34,26 +35,30 @@
       <input type="text" name="nom_facture" id="nom_facture" required>
 
       <label for="fichiers">Sélectionner les BL à associer :</label>
-      {% for date_code, entreprises in fichiers_groupes.items() %}
-        <h2>{{ date_code }}</h2>
-        {% for entreprise, chantiers in entreprises.items() %}
-          <h3 style="margin-left: 10px;">{{ entreprise }}</h3>
-          {% for chantier, machines in chantiers.items() %}
-            <h4 style="margin-left: 30px;">{{ chantier }}</h4>
-            {% for machine, fichiers in machines.items() %}
-              <h5 style="margin-left: 50px;">{{ machine }}</h5>
-              <ul style="margin-left: 70px;">
-              {% for chemin, nom in fichiers %}
-                <li>
-                  <input type="checkbox" name="fichiers" value="{{ chemin }}" id="{{ chemin }}">
-                  <label for="{{ chemin }}">{{ nom }}</label>
-                </li>
+      {% if fichiers_groupes %}
+        {% for date_code, entreprises in fichiers_groupes.items() %}
+          <h2>{{ date_code }}</h2>
+          {% for entreprise, chantiers in entreprises.items() %}
+            <h3 style="margin-left: 10px;">{{ entreprise }}</h3>
+            {% for chantier, machines in chantiers.items() %}
+              <h4 style="margin-left: 30px;">{{ chantier }}</h4>
+              {% for machine, fichiers in machines.items() %}
+                <h5 style="margin-left: 50px;">{{ machine }}</h5>
+                <ul style="margin-left: 70px;">
+                {% for chemin, nom in fichiers %}
+                  <li>
+                    <input type="checkbox" name="fichiers" value="{{ chemin }}" id="{{ chemin }}">
+                    <label for="{{ chemin }}">{{ nom }}</label>
+                  </li>
+                {% endfor %}
+                </ul>
               {% endfor %}
-              </ul>
             {% endfor %}
           {% endfor %}
         {% endfor %}
-      {% endfor %}
+      {% else %}
+        <p>Aucun BL archivé trouvé pour ces critères.</p>
+      {% endif %}
 
       <button type="submit" style="margin-top:20px;">📦 Générer la facture</button>
     </form>
