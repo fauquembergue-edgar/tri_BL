@@ -30,9 +30,12 @@
       <button type="submit" style="margin-top:10px;">🔎 Filtrer</button>
     </form>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
       <label for="nom_facture">Nom de la facture</label>
       <input type="text" name="nom_facture" id="nom_facture" required>
+
+      <label for="bc_file">Ajouter un Bon de Commande (optionnel) :</label>
+      <input type="file" name="bc_file" id="bc_file" accept="application/pdf">
 
       <label for="fichiers">Sélectionner les BL à associer :</label>
       {% if fichiers_groupes %}
