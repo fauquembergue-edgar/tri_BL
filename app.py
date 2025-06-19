@@ -174,9 +174,16 @@ def facture():
         fichiers = request.form.getlist("fichiers")
         dossier_facture = os.path.join(FACTURE_DIR, nom_facture)
         os.makedirs(dossier_facture, exist_ok=True)
+        # Déplacement des BL
         for chemin_absolu in fichiers:
             if os.path.exists(chemin_absolu):
                 shutil.move(chemin_absolu, os.path.join(dossier_facture, os.path.basename(chemin_absolu)))
+        # Ajout du bon de commande si fourni
+        bc_file = request.files.get("bc_file")
+        if bc_file and bc_file.filename:
+            bc_filename = sanitize_filename(bc_file.filename)
+            bc_path = os.path.join(dossier_facture, f"BC_{bc_filename}")
+            bc_file.save(bc_path)
         return redirect(url_for("facture"))
 
     # Regex pour détecter les dossiers mois avec accents
