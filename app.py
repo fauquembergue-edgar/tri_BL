@@ -140,6 +140,7 @@ def upload():
 
 @app.route("/facture", methods=["GET", "POST"])
 def facture():
+    # POST: Générer facture (inchangé)
     if request.method == "POST":
         nom_facture = sanitize_filename(request.form["nom_facture"].strip())
         fichiers = request.form.getlist("fichiers")
@@ -150,51 +151,69 @@ def facture():
                 shutil.move(chemin_absolu, os.path.join(dossier_facture, os.path.basename(chemin_absolu)))
         return redirect(url_for("facture"))
 
+    # Filtres GET
+    mois_selectionne = request.args.get("mois_filtre", "")
+    client_selectionne = request.args.get("client_filtre", "")
+
+    # Liste des mois disponibles
+    mois_disponibles = [nom for nom in os.listdir(BASE_DIR)
+                        if os.path.isdir(os.path.join(BASE_DIR, nom))
+                        and re.match(r"^[A-ZÉ]{4,5}\d{2}$", nom)
+                        and nom != "Factures"]
+    mois_disponibles.sort()
+
+    # Liste des clients disponibles
+    clients_set = set()
+    if mois_selectionne:
+        mois_dir = os.path.join(BASE_DIR, mois_selectionne)
+        if os.path.isdir(mois_dir):
+            for client in os.listdir(mois_dir):
+                if os.path.isdir(os.path.join(mois_dir, client)):
+                    clients_set.add(client)
+    else:
+        for mois in mois_disponibles:
+            mois_dir = os.path.join(BASE_DIR, mois)
+            for client in os.listdir(mois_dir):
+                if os.path.isdir(os.path.join(mois_dir, client)):
+                    clients_set.add(client)
+    clients_disponibles = sorted(list(clients_set))
+
+    # Construction de fichiers_groupes filtré
     fichiers_groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
-    for root, _, files in os.walk(BASE_DIR):
-        if FACTURE_DIR in root or UPLOAD_TEMP in root:
+    for mois in mois_disponibles:
+        if mois_selectionne and mois != mois_selectionne:
             continue
-        for file in files:
-            try:
-                chemin = os.path.join(root, file)
-                relative_path = os.path.relpath(chemin, BASE_DIR)
-                parts = relative_path.split(os.sep)
-                if len(parts) >= 4:
-                    dossier_date, entreprise, chantier, machine = parts[0], parts[1], parts[2], parts[3]
-                    fichiers_groupes[dossier_date][entreprise][chantier][machine].append((chemin, file))
-            except Exception as e:
-                print(f"[ERREUR FACTURE] {file} → {e}")
-
-    return render_template("facture.html", fichiers_groupes=fichiers_groupes)
-
-@app.route('/tri_bons', methods=['GET', 'POST'])
-def tri_bons():
-    if request.method == 'POST':
-        date_sel = request.form.get('date_selection')
-        if not date_sel:
-            return render_template('index.html', error="Veuillez sélectionner une date.")
-        year, month, _ = map(int, date_sel.split('-'))
-        date_code = f"{MOIS_FR[month].upper()}{str(year)[2:]}"
-        # Collect PDF BL files by date_code
-        bons_filtres = []
-        dossier_date = date_code
-        for root, _, files in os.walk(os.path.join(BASE_DIR, dossier_date)):
-            if FACTURE_DIR in root or UPLOAD_TEMP in root:
+        mois_dir = os.path.join(BASE_DIR, mois)
+        for client in os.listdir(mois_dir):
+            if client_selectionne and client != client_selectionne:
                 continue
-            for file in files:
-                if file.lower().endswith('.pdf'):
-                    chemin = os.path.join(root, file)
-                    rel = os.path.relpath(chemin, os.path.join(BASE_DIR, dossier_date))
-                    parts = rel.split(os.sep)
-                    if len(parts) >= 3:
-                        client, chantier, engin = parts[0], parts[1], parts[2]
-                        bons_filtres.append((client, chantier, engin, chemin, file))
-        # Grouping
-        groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-        for client, chantier, engin, chemin, filename in bons_filtres:
-            groupes[client][chantier][engin].append((chemin, filename))
-        return render_template('liste_bons.html', date_code=date_code, groupes=groupes)
-    return render_template('index.html')
+            client_dir = os.path.join(mois_dir, client)
+            if not os.path.isdir(client_dir):
+                continue
+            for chantier in os.listdir(client_dir):
+                chantier_dir = os.path.join(client_dir, chantier)
+                if not os.path.isdir(chantier_dir):
+                    continue
+                for machine in os.listdir(chantier_dir):
+                    machine_dir = os.path.join(chantier_dir, machine)
+                    if not os.path.isdir(machine_dir):
+                        continue
+                    for file in os.listdir(machine_dir):
+                        chemin = os.path.join(machine_dir, file)
+                        if file.lower().endswith('.pdf'):
+                            fichiers_groupes[mois][client][chantier][machine].append((chemin, file))
+
+    return render_template(
+        "facture.html",
+        fichiers_groupes=fichiers_groupes,
+        mois_disponibles=mois_disponibles,
+        clients_disponibles=clients_disponibles,
+        mois_selectionne=mois_selectionne,
+        client_selectionne=client_selectionne
+    )
+
+# La route /tri_bons ne sert plus, elle peut être supprimée du code.
+# (Si tu veux la conserver pour test ou autre, laisse-la, sinon tu peux la commenter/supprimer.)
 
 if __name__ == "__main__":
     ui = FlaskUI(app=app, server="flask", width=900, height=700)
