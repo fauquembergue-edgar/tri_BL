@@ -15,6 +15,11 @@ MOIS_FR = {
     9: 'sept', 10: 'octo', 11: 'nove', 12: 'déce'
 }
 
+# Pour matcher les dossiers mois avec accents (ex: AOÛT25, DÉC25)
+MOIS_MAJ_ACCENTS = [
+    'JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'
+]
+
 app = Flask(__name__)
 app.secret_key = 'archivagebl'
 
@@ -28,7 +33,6 @@ os.makedirs(BASE_DIR, exist_ok=True)
 os.makedirs(FACTURE_DIR, exist_ok=True)
 os.makedirs(UPLOAD_TEMP, exist_ok=True)
 
-# Fonction de nettoyage
 def sanitize_filename(name):
     return re.sub(r'[\/\\\:\*\?\"\<\>\|]', '-', name)
 
@@ -75,6 +79,23 @@ def extract_infos_from_pdf(filepath):
         print(f"[ERREUR extraction PDF] {e}")
         return "", "", ""
 
+def mois_code_to_tuple(mois_code):
+    """
+    Convertit un code de mois style 'JANV25' en un tuple (année, mois_num)
+    Pour un tri chronologique correct.
+    """
+    mois_abrev = mois_code[:-2]
+    annee = int(mois_code[-2:])
+    mois_num = None
+    for num, abbr in MOIS_FR.items():
+        if abbr.upper() == mois_abrev:
+            mois_num = num
+            break
+    # Si non trouvé (dossier mal nommé), mettre à la fin
+    if mois_num is None:
+        mois_num = 99
+    return (2000 + annee, mois_num)
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html", client="", chantier="", machine="", last_file=session.get("last_file_name", ""))
@@ -109,7 +130,15 @@ def upload():
             date_archivage = datetime.datetime.strptime(date_archivage_str, "%Y-%m-%d")
             mois = date_archivage.month
             annee = date_archivage.year % 100
+            # Respecte les accents (ex: AOÛT, DÉC), puis .upper()
             dossier_date = f"{MOIS_FR[mois].capitalize()}{annee:02d}".upper()
+            # Correction pour "Déc" : .capitalize() donne "Déc", on veut "DÉC"
+            if dossier_date.startswith("Déc"):
+                dossier_date = "DÉC" + dossier_date[3:]
+            if dossier_date.startswith("Févr"):
+                dossier_date = "FÉVR" + dossier_date[4:]
+            if dossier_date.startswith("Août"):
+                dossier_date = "AOÛT" + dossier_date[4:]
         except Exception as e:
             print(f"[ERREUR PARSING DATE] {e}")
             dossier_date = ""
@@ -140,7 +169,6 @@ def upload():
 
 @app.route("/facture", methods=["GET", "POST"])
 def facture():
-    # POST : Générer facture (inchangé)
     if request.method == "POST":
         nom_facture = sanitize_filename(request.form["nom_facture"].strip())
         fichiers = request.form.getlist("fichiers")
@@ -151,19 +179,19 @@ def facture():
                 shutil.move(chemin_absolu, os.path.join(dossier_facture, os.path.basename(chemin_absolu)))
         return redirect(url_for("facture"))
 
-    # Filtres GET (mois/client)
-    mois_selectionne = request.args.get("mois_filtre", "")
-    client_selectionne = request.args.get("client_filtre", "")
-
     # Regex pour détecter les dossiers mois avec accents
-    regex_mois = r"^(JANV|FÉVR|MARS|AVR|MAI|JUIN|JUIL|AOÛT|SEPT|OCT|NOV|DÉC)\d{2}$"
+    regex_mois = r"^(" + "|".join(MOIS_MAJ_ACCENTS) + r")\d{2}$"
     mois_disponibles = [
         nom for nom in os.listdir(BASE_DIR)
         if os.path.isdir(os.path.join(BASE_DIR, nom))
         and re.match(regex_mois, nom)
         and nom != "Factures"
     ]
-    mois_disponibles.sort()
+    # Tri chronologique (JANV25 < AOÛT25 < JANV26 ...)
+    mois_disponibles.sort(key=mois_code_to_tuple)
+
+    mois_selectionne = request.args.get("mois_filtre", "")
+    client_selectionne = request.args.get("client_filtre", "")
 
     # Liste des clients disponibles dynamiquement
     clients_set = set()
@@ -184,7 +212,6 @@ def facture():
     # Construction de fichiers_groupes filtré
     fichiers_groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
     for mois in mois_disponibles:
-        # N'applique le filtre que si une valeur est explicitement sélectionnée
         if mois_selectionne and mois != mois_selectionne:
             continue
         mois_dir = os.path.join(BASE_DIR, mois)
