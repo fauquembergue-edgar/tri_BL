@@ -8,11 +8,11 @@ import re
 from flaskwebgui import FlaskUI
 from collections import defaultdict
 
-# Abréviations FR 4 lettres pour les mois
+# Abréviations FR 4 lettres pour les mois (avec accents là où il en faut)
 MOIS_FR = {
     1: 'janv', 2: 'févr', 3: 'mars', 4: 'avr',
-    5: 'mai', 6: 'juin', 7: 'juil', 8: 'aout',
-    9: 'sept', 10: 'oct', 11: 'nov', 12: 'dec'
+    5: 'mai', 6: 'juin', 7: 'juil', 8: 'août',
+    9: 'sept', 10: 'oct', 11: 'nov', 12: 'déc'
 }
 
 app = Flask(__name__)
@@ -109,7 +109,7 @@ def upload():
             date_archivage = datetime.datetime.strptime(date_archivage_str, "%Y-%m-%d")
             mois = date_archivage.month
             annee = date_archivage.year % 100
-            dossier_date = f"{MOIS_FR[mois].upper()}{annee:02d}"
+            dossier_date = f"{MOIS_FR[mois].capitalize()}{annee:02d}".upper()
         except Exception as e:
             print(f"[ERREUR PARSING DATE] {e}")
             dossier_date = ""
@@ -155,11 +155,14 @@ def facture():
     mois_selectionne = request.args.get("mois_filtre", "")
     client_selectionne = request.args.get("client_filtre", "")
 
-    # Liste des mois disponibles (regex adaptée pour sans accent)
-    mois_disponibles = [nom for nom in os.listdir(BASE_DIR)
+    # Regex pour détecter les dossiers mois avec accents
+    regex_mois = r"^(JANV|FÉVR|MARS|AVR|MAI|JUIN|JUIL|AOÛT|SEPT|OCT|NOV|DÉC)\d{2}$"
+    mois_disponibles = [
+        nom for nom in os.listdir(BASE_DIR)
         if os.path.isdir(os.path.join(BASE_DIR, nom))
-        and re.match(r"^[A-Z]{4,5}\d{2}$", nom)
-        and nom != "Factures"]
+        and re.match(regex_mois, nom)
+        and nom != "Factures"
+    ]
     mois_disponibles.sort()
 
     # Liste des clients disponibles dynamiquement
