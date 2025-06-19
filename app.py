@@ -10,9 +10,9 @@ from collections import defaultdict
 
 # Abréviations FR 4 lettres pour les mois (avec accents là où il en faut)
 MOIS_FR = {
-    1: 'janv', 2: 'févr', 3: 'mars', 4: 'avr',
+    1: 'janv', 2: 'févr', 3: 'mars', 4: 'avri',
     5: 'mai', 6: 'juin', 7: 'juil', 8: 'août',
-    9: 'sept', 10: 'oct', 11: 'nov', 12: 'déc'
+    9: 'sept', 10: 'octo', 11: 'nove', 12: 'déce'
 }
 
 app = Flask(__name__)
