@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session
+from flask import Flask, request, render_template, redirect, url_for, session, send_file, abort
 import os
 import datetime
 import csv
@@ -130,9 +130,7 @@ def upload():
             date_archivage = datetime.datetime.strptime(date_archivage_str, "%Y-%m-%d")
             mois = date_archivage.month
             annee = date_archivage.year % 100
-            # Respecte les accents (ex: AOÛT, DÉC), puis .upper()
             dossier_date = f"{MOIS_FR[mois].capitalize()}{annee:02d}".upper()
-            # Correction pour "Déc" : .capitalize() donne "Déc", on veut "DÉC"
             if dossier_date.startswith("Déc"):
                 dossier_date = "DÉC" + dossier_date[3:]
             if dossier_date.startswith("Févr"):
@@ -146,7 +144,6 @@ def upload():
     if fichier and client and chantier and machine and dossier_date:
         nom_original = os.path.splitext(fichier.filename)[0]
         extension = os.path.splitext(fichier.filename)[1]
-        # Archivage : date_code/client/chantier/engin
         dossier_cible = os.path.join(BASE_DIR, dossier_date, client, chantier, machine)
         os.makedirs(dossier_cible, exist_ok=True)
         nom_fichier = f"{client}_{chantier}_{machine}_{nom_original}{extension}"
@@ -174,11 +171,9 @@ def facture():
         fichiers = request.form.getlist("fichiers")
         dossier_facture = os.path.join(FACTURE_DIR, nom_facture)
         os.makedirs(dossier_facture, exist_ok=True)
-        # Déplacement des BL
         for chemin_absolu in fichiers:
             if os.path.exists(chemin_absolu):
                 shutil.move(chemin_absolu, os.path.join(dossier_facture, os.path.basename(chemin_absolu)))
-        # Ajout du bon de commande si fourni
         bc_file = request.files.get("bc_file")
         if bc_file and bc_file.filename:
             bc_filename = sanitize_filename(bc_file.filename)
@@ -186,7 +181,6 @@ def facture():
             bc_file.save(bc_path)
         return redirect(url_for("facture"))
 
-    # Regex pour détecter les dossiers mois avec accents
     regex_mois = r"^(" + "|".join(MOIS_MAJ_ACCENTS) + r")\d{2}$"
     mois_disponibles = [
         nom for nom in os.listdir(BASE_DIR)
@@ -194,13 +188,11 @@ def facture():
         and re.match(regex_mois, nom)
         and nom != "Factures"
     ]
-    # Tri chronologique (JANV25 < AOÛT25 < JANV26 ...)
     mois_disponibles.sort(key=mois_code_to_tuple)
 
     mois_selectionne = request.args.get("mois_filtre", "")
     client_selectionne = request.args.get("client_filtre", "")
 
-    # Liste des clients disponibles dynamiquement
     clients_set = set()
     if mois_selectionne:
         mois_dir = os.path.join(BASE_DIR, mois_selectionne)
@@ -216,7 +208,6 @@ def facture():
                     clients_set.add(client)
     clients_disponibles = sorted(list(clients_set))
 
-    # Construction de fichiers_groupes filtré
     fichiers_groupes = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
     for mois in mois_disponibles:
         if mois_selectionne and mois != mois_selectionne:
@@ -249,6 +240,15 @@ def facture():
         mois_selectionne=mois_selectionne,
         client_selectionne=client_selectionne
     )
+
+@app.route('/static/pdf_proxy')
+def pdf_proxy():
+    path = request.args.get('path', '')
+    if not path or not os.path.isfile(path) or not path.lower().endswith('.pdf'):
+        return abort(404)
+    if not os.path.abspath(path).startswith(os.path.abspath(BASE_DIR)):
+        return abort(403)
+    return send_file(path, mimetype='application/pdf')
 
 if __name__ == "__main__":
     ui = FlaskUI(app=app, server="flask", width=900, height=700)
