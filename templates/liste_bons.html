@@ -3,20 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <title>Bons de Livraison – {{ date_code }}</title>
+
+  <!-- Lien vers le fichier CSS pour le style -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <div class="container">
-    <h1>📅 Bons de Livraison – {{ date_code }}</h1>
+    <h1>Bons de Livraison – {{ date_code }}</h1>
+
+    <!-- Boucle principale : parcourt les clients -->
     {% for client, chantiers in groupes.items() %}
       <section>
-        <h2>👤 {{ client }}</h2>
+        <h2>Client : {{ client }}</h2>
+
+        <!-- Boucle secondaire : parcourt les chantiers de chaque client -->
         {% for chantier, engins in chantiers.items() %}
           <div class="sub-section">
-            <h3>🏗️ {{ chantier }}</h3>
+            <h3>Chantier : {{ chantier }}</h3>
+
+            <!-- Boucle tertiaire : parcourt les machines ou engins pour chaque chantier -->
             {% for engin, fichiers in engins.items() %}
               <div class="sub-sub-section">
-                <h4>🚜 {{ engin }}</h4>
+                <h4>Engin / Machine : {{ engin }}</h4>
+                
+                <!-- Liste des fichiers associés à cet engin -->
                 <ul>
                   {% for chemin, nom_fichier in fichiers %}
                     <li>{{ nom_fichier }}</li>
@@ -28,8 +38,11 @@
         {% endfor %}
       </section>
     {% else %}
+      <!-- Message si aucun fichier trouvé -->
       <p>Aucun bon trouvé pour {{ date_code }}.</p>
     {% endfor %}
+
+    <!-- Lien de retour à la page d'accueil -->
     <p><a href="/">← Retour</a></p>
   </div>
 </body>
