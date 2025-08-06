@@ -3,39 +3,44 @@ import os
 import datetime
 import csv
 import shutil
-import fitz  # PyMuPDF
+import fitz  # Librairie PyMuPDF pour lire les PDF
 import re
 from flaskwebgui import FlaskUI
 from collections import defaultdict
 
-# Abréviations FR 4 lettres pour les mois (avec accents là où il en faut)
+# Dictionnaire contenant les abréviations françaises des mois (4 lettres)
 MOIS_FR = {
     1: 'janv', 2: 'févr', 3: 'mars', 4: 'avri',
     5: 'mai', 6: 'juin', 7: 'juil', 8: 'août',
     9: 'sept', 10: 'octo', 11: 'nove', 12: 'déce'
 }
 
-# Pour matcher les dossiers mois avec accents (ex: AOÛT25, DÉC25)
+# Liste utilisée pour identifier les noms de dossiers de mois avec accents en majuscule
 MOIS_MAJ_ACCENTS = [
     'JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'
 ]
 
+# Initialisation de l'application Flask
 app = Flask(__name__)
 app.secret_key = 'archivagebl'
 
+# Chemins des différents répertoires utilisés
 BASE_DIR = r"T:\SECRETARIAT\SECRETARIAT\PERMANENT\JUSTIFICATIFS FACTURES\TPW\Archivage_Bons"
 FACTURE_DIR = os.path.join(BASE_DIR, "Factures")
 UPLOAD_TEMP = "uploads_temp"
 HISTO_FILE = os.path.join(BASE_DIR, "historique.csv")
 
+# Configuration du dossier d'upload temporaire
 app.config['UPLOAD_FOLDER'] = UPLOAD_TEMP
 os.makedirs(BASE_DIR, exist_ok=True)
 os.makedirs(FACTURE_DIR, exist_ok=True)
 os.makedirs(UPLOAD_TEMP, exist_ok=True)
 
+# Fonction pour nettoyer les noms de fichiers
 def sanitize_filename(name):
     return re.sub(r'[\/\\\:\*\?\"\<\>\|]', '-', name)
 
+# Fonction pour extraire les informations (client, chantier, engin) à partir d’un fichier PDF
 def extract_infos_from_pdf(filepath):
     try:
         text = ""
@@ -60,6 +65,7 @@ def extract_infos_from_pdf(filepath):
                 parts = re.split(r'[:\-–]', line_clean, maxsplit=1)
                 if len(parts) > 1:
                     chantier = parts[1].strip()
+                    # Vérifie si le chantier continue sur la ligne suivante
                     if i + 1 < len(lines):
                         next_line = lines[i + 1].strip()
                         if not re.match(r'(?i)^réf\.?\s*chantier\s*[:\-–]', next_line):
@@ -79,11 +85,8 @@ def extract_infos_from_pdf(filepath):
         print(f"[ERREUR extraction PDF] {e}")
         return "", "", ""
 
+# Fonction utilisée pour trier chronologiquement les dossiers nommés 'JANV25', 'AOÛT24', etc.
 def mois_code_to_tuple(mois_code):
-    """
-    Convertit un code de mois style 'JANV25' en un tuple (année, mois_num)
-    Pour un tri chronologique correct.
-    """
     mois_abrev = mois_code[:-2]
     annee = int(mois_code[-2:])
     mois_num = None
@@ -91,15 +94,16 @@ def mois_code_to_tuple(mois_code):
         if abbr.upper() == mois_abrev:
             mois_num = num
             break
-    # Si non trouvé (dossier mal nommé), mettre à la fin
     if mois_num is None:
         mois_num = 99
     return (2000 + annee, mois_num)
 
+# Route principale affichant le formulaire
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html", client="", chantier="", machine="", last_file=session.get("last_file_name", ""))
 
+# Route qui analyse le PDF et extrait automatiquement les champs à partir de son contenu
 @app.route("/analyser_pdf", methods=["POST"])
 def analyser_pdf():
     fichier = request.files.get("pdf_file")
@@ -112,6 +116,7 @@ def analyser_pdf():
         return render_template("index.html", client=entreprise, chantier=chantier, machine=engin, last_file=fichier.filename)
     return redirect(url_for("index"))
 
+# Route qui gère l'enregistrement du fichier PDF dans le bon dossier selon les champs remplis
 @app.route("/upload", methods=["POST"])
 def upload():
     client = sanitize_filename(request.form.get("client", "").strip())
@@ -156,6 +161,7 @@ def upload():
         heure = now.strftime("%H:%M")
         write_header = not os.path.exists(HISTO_FILE) or os.path.getsize(HISTO_FILE) == 0
 
+        # Enregistre les informations dans un fichier CSV d'historique
         with open(HISTO_FILE, mode="a", newline="", encoding="utf-8-sig") as csvfile:
             writer = csv.writer(csvfile, delimiter=';')
             if write_header:
@@ -164,6 +170,7 @@ def upload():
 
     return redirect(url_for("index"))
 
+# Route permettant de grouper et trier les fichiers à rattacher à une facture
 @app.route("/facture", methods=["GET", "POST"])
 def facture():
     if request.method == "POST":
@@ -241,6 +248,7 @@ def facture():
         client_selectionne=client_selectionne
     )
 
+# Route proxy pour afficher un fichier PDF localement depuis un chemin sécurisé
 @app.route('/static/pdf_proxy')
 def pdf_proxy():
     path = request.args.get('path', '')
@@ -250,6 +258,7 @@ def pdf_proxy():
         return abort(403)
     return send_file(path, mimetype='application/pdf')
 
+# Lancement de l'application avec interface graphique FlaskUI
 if __name__ == "__main__":
     ui = FlaskUI(app=app, server="flask", width=900, height=700)
     ui.run()
