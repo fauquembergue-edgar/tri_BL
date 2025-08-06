@@ -3,41 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <title>Archivage de Bons de Livraison</title>
+
+  <!-- Lien vers le fichier CSS pour le style général -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <main class="container">
-    <h1>📁 Archivage de Bons de Livraison</h1>
 
+  <!-- Conteneur principal -->
+  <main class="container">
+    <h1>Archivage de Bons de Livraison</h1>
+
+    <!-- Formulaire pour analyser automatiquement un BL -->
     <form method="POST" action="/analyser_pdf" enctype="multipart/form-data">
-      <label for="pdf_file">Analyser un BL (PDF)</label>
+      <label for="pdf_file">Analyser un Bon de Livraison (PDF)</label>
       <input type="file" name="pdf_file" id="pdf_file" accept="application/pdf" required>
-      <button type="submit">🔍 Lire les infos PDF</button>
+      <button type="submit">Lire les informations du PDF</button>
     </form>
 
+    <!-- Formulaire principal pour archiver un BL manuellement ou après lecture -->
     <form method="POST" action="/upload" enctype="multipart/form-data">
+
+      <!-- Champ pour renseigner l’entreprise ou le client -->
       <label for="client">Entreprise / Client</label>
       <input type="text" name="client" id="client" value="{{ client }}">
 
+      <!-- Champ pour renseigner le chantier concerné -->
       <label for="chantier">Chantier</label>
       <input type="text" name="chantier" id="chantier" value="{{ chantier }}">
 
+      <!-- Champ pour indiquer la machine ou l’engin concerné -->
       <label for="machine">Machine / Engin</label>
       <input type="text" name="machine" id="machine" value="{{ machine }}">
 
+      <!-- Champ pour choisir la date d’archivage du document -->
       <label for="date_archivage">Date d'archivage</label>
       <input type="date" name="date_archivage" id="date_archivage" required>
 
-      <label for="fichier">Choisir le fichier PDF du BL</label>
+      <!-- Champ pour sélectionner le fichier PDF à archiver -->
+      <label for="fichier">Choisir le fichier PDF du Bon de Livraison</label>
       <input type="file" name="fichier" id="fichier" accept="application/pdf">
+
+      <!-- Affiche le nom du dernier fichier analysé automatiquement -->
       {% if last_file %}
         <p style="font-size: 0.9em;">Dernier fichier analysé : {{ last_file }}</p>
       {% endif %}
 
-      <button type="submit">📥 Archiver le BL</button>
+      <!-- Bouton de validation pour lancer l’archivage -->
+      <button type="submit">Archiver le Bon de Livraison</button>
     </form>
 
-    <a href="/facture" class="lien-facture">🔗 Aller à l'association de factures</a>
+    <!-- Lien pour accéder à la page d'association des BL aux factures -->
+    <a href="/facture" class="lien-facture">Aller à la page d'association des factures</a>
   </main>
 </body>
 </html>
