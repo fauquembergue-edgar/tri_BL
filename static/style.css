@@ -1,46 +1,59 @@
+/* Style global de la page */
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-  margin: 0;
-  padding: 0;
+  font-family: Arial, sans-serif;      /* Police principale du texte */
+  background: #f4f4f4;                 /* Couleur de fond claire pour toute la page */
+  margin: 0;                           /* Supprime les marges par défaut du navigateur */
+  padding: 0;                          /* Supprime les espacements internes */
 }
+
+/* Conteneur principal du formulaire */
 .container {
-  max-width: 600px;
-  margin: 40px auto;
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  max-width: 600px;                    /* Largeur maximale du bloc */
+  margin: 40px auto;                   /* Centrage horizontal avec un espace vertical */
+  background: white;                   /* Fond blanc du bloc */
+  padding: 30px;                       /* Espacement interne autour du contenu */
+  border-radius: 12px;                 /* Coins arrondis */
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);  /* Légère ombre portée pour un effet de relief */
 }
+
+/* Titre principal */
 h1 {
-  text-align: center;
-  color: #2c3e50;
+  text-align: center;                  /* Centrage du titre */
+  color: #2c3e50;                      /* Couleur sombre élégante */
 }
+
+/* Style des libellés de champs */
 label {
-  display: block;
-  margin-top: 20px;
-  font-weight: bold;
+  display: block;                      /* Le label prend toute la largeur */
+  margin-top: 20px;                    /* Espacement avant chaque label */
+  font-weight: bold;                   /* Texte en gras */
 }
+
+/* Style des champs de texte et des sélecteurs de fichier */
 input[type="text"], input[type="file"] {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
+  width: 100%;                         /* Champ prend toute la largeur disponible */
+  padding: 10px;                       /* Espacement interne du champ */
+  margin-top: 5px;                     /* Petit espace entre le label et le champ */
+  border-radius: 8px;                  /* Coins légèrement arrondis */
+  border: 1px solid #ccc;              /* Bordure grise claire */
+  box-sizing: border-box;              /* Inclut padding et bordure dans la largeur totale */
 }
+
+/* Style du bouton principal */
 button {
-  margin-top: 25px;
-  width: 100%;
-  background: #3498db;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s ease;
+  margin-top: 25px;                    /* Espacement avant le bouton */
+  width: 100%;                         /* Le bouton prend toute la largeur */
+  background: #3498db;                 /* Couleur bleue du fond */
+  color: white;                        /* Texte blanc */
+  padding: 12px;                       /* Espacement interne du bouton */
+  border: none;                        /* Pas de bordure par défaut */
+  border-radius: 10px;                 /* Coins arrondis */
+  font-size: 16px;                     /* Taille du texte */
+  cursor: pointer;                     /* Curseur main au survol */
+  transition: background 0.3s ease;    /* Animation fluide au survol */
 }
+
+/* Effet au survol du bouton */
 button:hover {
-  background: #2980b9;
+  background: #2980b9;                 /* Fond légèrement plus foncé au survol */
 }
