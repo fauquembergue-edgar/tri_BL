@@ -3,21 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <title>Créer une facture</title>
+
+  <!-- Lien vers le fichier CSS principal -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Quelques styles supplémentaires spécifiques à cette page -->
   <style>
     body, html {
       height: 100%;
       margin: 0;
       padding: 0;
     }
+
+    /* Conteneur principal avec deux blocs (formulaire + aperçu) */
     .facture-main-wrapper {
       display: flex;
       justify-content: flex-start;
       align-items: stretch;
       height: 100vh;
       min-height: 100vh;
-      margin: 0;
     }
+
+    /* Bloc de gauche : formulaire de génération de facture */
     .facture-ilot-central {
       width: 900px;
       min-width: 400px;
@@ -30,23 +37,28 @@
       z-index: 3;
       overflow-y: auto;
     }
+
+    /* Bloc de droite : aperçu des BL (PDF) */
     .facture-ilot-bl {
       flex: 1 1 0;
       min-width: 700px;
       max-width: 1200px;
       background: #f8f8f8;
-      padding: 24px 24px 24px 24px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
       align-items: stretch;
     }
+
+    /* Style du titre de l’aperçu PDF */
     .apercu-bl-title {
       font-weight: bold;
       font-size: 1.06em;
-      margin-bottom: 10px;
-      margin-top: 0;
+      margin: 10px 0;
       text-align: left;
     }
+
+    /* Texte affiché quand aucun BL n’est sélectionné */
     .apercu-bl-empty {
       color: #888;
       font-style: italic;
@@ -54,6 +66,8 @@
       text-align: center;
       font-size: 1.15em;
     }
+
+    /* Zone d’aperçu du PDF */
     .apercu-pdf-viewer {
       width: 100%;
       min-height: 600px;
@@ -65,18 +79,22 @@
       margin: 0 auto;
       display: block;
     }
+
     .container {
       width: 100%;
       padding: 0;
       margin: 0;
       box-sizing: border-box;
     }
-    /* Optionnel: scroll indépendant pour chaque ilot si besoin */
+
+    /* Permet à chaque bloc d’avoir son propre scroll vertical */
     .facture-ilot-central, .facture-ilot-bl {
       overflow-y: auto;
       height: 100vh;
     }
   </style>
+
+  <!-- Script pour mettre à jour l’aperçu du BL sélectionné -->
   <script>
     function updatePreview(input) {
       const filePath = input.value;
@@ -86,17 +104,23 @@
       document.getElementById('apercu-bl-empty').style.display = "none";
       document.getElementById('apercu-bl-body').style.display = "block";
     }
+
+    // Si un BL est déjà coché au chargement, on l’affiche
     window.addEventListener('DOMContentLoaded', function() {
       const checked = document.querySelector('input[type=checkbox][name=fichiers]:checked');
       if (checked) updatePreview(checked);
     });
   </script>
 </head>
+
 <body>
   <div class="facture-main-wrapper">
-    <!-- Ilot central (formulaires, filtres...) -->
+    
+    <!-- Partie gauche : formulaire de génération de facture -->
     <div class="facture-ilot-central">
-      <h1 style="margin-top: 0;">🧾 Associer des BL à une facture</h1>
+      <h1 style="margin-top: 0;">Associer des BL à une facture</h1>
+
+      <!-- Formulaire de filtre par mois et client -->
       <form method="GET" action="/facture">
         <label for="mois_filtre">Filtrer par mois</label>
         <select name="mois_filtre" id="mois_filtre">
@@ -105,6 +129,7 @@
             <option value="{{ mois }}" {% if mois == mois_selectionne %}selected{% endif %}>{{ mois }}</option>
           {% endfor %}
         </select>
+
         <label for="client_filtre">Filtrer par client</label>
         <select name="client_filtre" id="client_filtre">
           <option value="">-- Tous les clients --</option>
@@ -112,14 +137,20 @@
             <option value="{{ client }}" {% if client == client_selectionne %}selected{% endif %}>{{ client }}</option>
           {% endfor %}
         </select>
-        <button type="submit" style="margin-top:10px;">🔎 Filtrer</button>
+
+        <button type="submit" style="margin-top:10px;">Filtrer</button>
       </form>
+
+      <!-- Formulaire de création de facture avec sélection de fichiers -->
       <form method="POST" enctype="multipart/form-data">
         <label for="nom_facture">Nom de la facture</label>
         <input type="text" name="nom_facture" id="nom_facture" required>
+
         <label for="bc_file">Ajouter un Bon de Commande (optionnel) :</label>
         <input type="file" name="bc_file" id="bc_file" accept="application/pdf">
+
         <label for="fichiers">Sélectionner les BL à associer :</label>
+
         {% if fichiers_groupes %}
           {% for date_code, entreprises in fichiers_groupes.items() %}
             <h2>{{ date_code }}</h2>
@@ -145,11 +176,14 @@
         {% else %}
           <p>Aucun BL archivé trouvé pour ces critères.</p>
         {% endif %}
-        <button type="submit" style="margin-top:20px;">📦 Générer la facture</button>
+
+        <button type="submit" style="margin-top:20px;">Générer la facture</button>
       </form>
+
       <p style="margin-top:20px;"><a href="/">← Retour</a></p>
     </div>
-    <!-- Ilot BL (aperçu PDF) -->
+
+    <!-- Partie droite : aperçu dynamique du fichier PDF sélectionné -->
     <div class="facture-ilot-bl">
       <div id="apercu-bl-empty" class="apercu-bl-empty">
         Aucun BL sélectionné.<br>
